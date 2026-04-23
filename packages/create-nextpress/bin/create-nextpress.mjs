@@ -3,7 +3,7 @@ import prompts from 'prompts';
 import kleur from 'kleur';
 import { execa } from 'execa';
 import tiged from 'tiged';
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const { bold, green, cyan, yellow, red, dim } = kleur;
@@ -92,12 +92,18 @@ console.log('');
 
 // 1. Download NextPress
 if (isInPlace) {
+  const existing = readdirSync(projectDir).filter(f => f !== '.git');
+  if (existing.length > 0) {
+    console.error(red(`\n  Error: current directory is not empty. Please run in an empty folder.\n`));
+    process.exit(1);
+  }
   step('Downloading NextPress into current directory');
 } else {
   if (existsSync(projectDir)) {
     console.error(red(`\n  Error: "${projectName}" already exists.\n`));
     process.exit(1);
   }
+  mkdirSync(projectDir, { recursive: true });
   step('Downloading NextPress');
 }
 
@@ -105,12 +111,11 @@ try {
   const emitter = tiged(NEXTPRESS_REPO, { disableCache: true, force: true });
   await emitter.clone(projectDir);
   ok();
-} catch {
+} catch (e) {
   try {
-    if (!isInPlace) mkdirSync(projectDir, { recursive: true });
-    warn('degit failed, trying git clone');
+    warn(`degit failed (${e.message}), trying git clone`);
     await execa('git', ['clone', '--depth=1', `https://github.com/${NEXTPRESS_REPO}.git`, projectDir], {
-      stdio: 'ignore',
+      stdio: 'inherit',
     });
     ok();
   } catch {
