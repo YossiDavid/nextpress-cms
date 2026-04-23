@@ -1,0 +1,43 @@
+name: nextpress
+region: nyc
+services:
+  - name: web
+    dockerfile_path: apps/web/Dockerfile
+    source_dir: /
+    http_port: 3000
+    instance_size_slug: basic-xxs
+    instance_count: 1
+    health_check:
+      http_path: /api/health
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${nextpress-db.DATABASE_URL}
+      - key: AUTH_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+      - key: NEXT_PUBLIC_URL
+        scope: RUN_AND_BUILD_TIME
+      - key: ADMIN_EMAIL
+        scope: RUN_TIME
+        type: SECRET
+      - key: ADMIN_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+      - key: SITE_TITLE
+        scope: RUN_AND_BUILD_TIME
+        value: My NextPress Site
+      - key: UPLOAD_DIR
+        scope: RUN_TIME
+        value: /app/uploads
+      - key: UPLOAD_URL
+        scope: RUN_AND_BUILD_TIME
+
+databases:
+  - name: nextpress-db
+    engine: PG
+    version: "16"
+    size: db-s-dev-database
+    num_nodes: 1

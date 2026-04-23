@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// === AUTH ===
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  role          UserRole  @default(EDITOR)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  posts         Post[]
+  sessions      Session[]
+  customer      Customer?
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+  VIEWER
+  CUSTOMER
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// === CMS CORE ===
+
+model PostType {
+  id          String              @id @default(cuid())
+  slug        String              @unique
+  name        String
+  description String?
+  icon        String?
+  isBuiltIn   Boolean             @default(false)
+  hasArchive  Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  fields      FieldDefinition[]
+  posts       Post[]
+}
+
+model FieldDefinition {
+  id          String    @id @default(cuid())
+  postTypeId  String
+  slug        String
+  label       String
+  type        FieldType
+  required    Boolean   @default(false)
+  defaultVal  String?
+  options     Json?
+  order       Int       @default(0)
+  postType    PostType  @relation(fields: [postTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([postTypeId, slug])
+}
+
+enum FieldType {
+  TEXT
+  TEXTAREA
+  RICHTEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  IMAGE
+  GALLERY
+  SELECT
+  MULTISELECT
+  RELATION
+  JSON
+}
+
+model Post {
+  id          String      @id @default(cuid())
+  postTypeId  String
+  title       String
+  slug        String
+  status      PostStatus  @default(DRAFT)
+  authorId    String?
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  postType    PostType    @relation(fields: [postTypeId], references: [id])
+  author      User?       @relation(fields: [authorId], references: [id])
+  fieldValues FieldValue[]
+  orderItems  OrderItem[]
+  variations  ProductVariation[]
+  categories  ProductCategory[]  @relation("ProductCategories")
+  tags        ProductTag[]       @relation("ProductTags")
+
+  @@unique([postTypeId, slug])
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  TRASH
+}
+
+model FieldValue {
+  id         String  @id @default(cuid())
+  postId     String
+  fieldSlug  String
+  value      String?
+  post       Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, fieldSlug])
+}
+
+// === MEDIA ===
+
+model Media {
+  id        String   @id @default(cuid())
+  filename  String
+  mimeType  String
+  size      Int
+  url       String
+  width     Int?
+  height    Int?
+  alt       String?
+  createdAt DateTime @default(now())
+}
+
+// === OPTIONS ===
+
+model Option {
+  key      String  @id
+  value    String
+  autoload Boolean @default(true)
+}
+
+// === ECOMMERCE ===
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique @default(cuid())
+  status          OrderStatus @default(PENDING)
+  customerId      String?
+  customerEmail   String
+  customerName    String
+  billingAddress  Json
+  shippingAddress Json?
+  subtotal        Decimal     @db.Decimal(10, 2)
+  tax             Decimal     @db.Decimal(10, 2) @default(0)
+  shipping        Decimal     @db.Decimal(10, 2) @default(0)
+  total           Decimal     @db.Decimal(10, 2)
+  discount        Decimal     @db.Decimal(10, 2) @default(0)
+  couponCode      String?
+  currency        String      @default("ILS")
+  paymentProvider String?
+  paymentRef      String?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  FAILED
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  sku       String?
+  price     Decimal @db.Decimal(10, 2)
+  quantity  Int
+  total     Decimal @db.Decimal(10, 2)
+  meta      Json?
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Post    @relation(fields: [productId], references: [id])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  userId    String?  @unique
+  createdAt DateTime @default(now())
+  orders    Order[]
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Coupon {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  type        CouponType
+  amount      Decimal    @db.Decimal(10, 2)
+  minOrderAmt Decimal?   @db.Decimal(10, 2)
+  usageLimit  Int?
+  usageCount  Int        @default(0)
+  expiresAt   DateTime?
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+// === PRODUCT TAXONOMY ===
+
+model ProductCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  products    Post[]   @relation("ProductCategories")
+}
+
+model ProductTag {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  products  Post[]   @relation("ProductTags")
+}
+
+// === PRODUCT VARIATIONS ===
+
+model ProductVariation {
+  id        String   @id @default(cuid())
+  productId String
+  name      String   // display label e.g. "L / אדום"
+  sku       String?
+  price     Decimal  @db.Decimal(10, 2)
+  stock     Int?
+  options   Json     @default("{}") // { size: "L", color: "אדום" }
+  createdAt DateTime @default(now())
+  product   Post     @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// === SHIPPING ===
+
+model ShippingMethod {
+  id          String   @id @default(cuid())
+  name        String   // "משלוח רגיל"
+  description String?  // "3-5 ימי עסקים"
+  cost        Decimal  @db.Decimal(10, 2)
+  freeAbove   Decimal? @db.Decimal(10, 2) // free if order >= this amount
+  active      Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// === MENUS ===
+
+model Menu {
+  id    String     @id @default(cuid())
+  name  String
+  slug  String     @unique
+  items MenuItem[]
+}
+
+model MenuItem {
+  id       String     @id @default(cuid())
+  menuId   String
+  label    String
+  url      String?
+  postId   String?
+  parentId String?
+  order    Int        @default(0)
+  menu     Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parent   MenuItem?  @relation("MenuItemChildren", fields: [parentId], references: [id])
+  children MenuItem[] @relation("MenuItemChildren")
+}
+
+// === API KEYS ===
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  permissions String[]
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+// === PASSWORD RESET ===
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}

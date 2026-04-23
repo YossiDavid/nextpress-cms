@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: nextpress-web
+    runtime: docker
+    dockerfilePath: apps/web/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nextpress-db
+          property: connectionString
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SITE_TITLE
+        value: My NextPress Site
+      - key: UPLOAD_DIR
+        value: /app/uploads
+      - key: UPLOAD_URL
+        sync: false
+
+databases:
+  - name: nextpress-db
+    plan: starter
+    databaseName: nextpress
+    user: nextpress

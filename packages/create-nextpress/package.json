@@ -1,0 +1,34 @@
+{
+	"name": "create-nextpress-cms",
+	"version": "0.1.1",
+	"description": "Create a new NextPress project",
+	"keywords": [
+		"nextpress",
+		"cms",
+		"nextjs",
+		"ecommerce"
+	],
+	"homepage": "https://github.com/nextpress-cms/nextpress",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/nextpress-cms/nextpress.git",
+		"directory": "packages/create-nextpress"
+	},
+	"license": "MIT",
+	"bin": {
+		"create-nextpress-cms": "./bin/create-nextpress.mjs"
+	},
+	"type": "module",
+	"files": [
+		"bin"
+	],
+	"dependencies": {
+		"prompts": "^2.4.2",
+		"kleur": "^4.1.5",
+		"execa": "^8.0.1",
+		"tiged": "^2.12.7"
+	},
+	"engines": {
+		"node": ">=18"
+	}
+}

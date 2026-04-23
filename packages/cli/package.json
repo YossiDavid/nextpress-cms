@@ -1,0 +1,13 @@
+{
+  "name": "nextpress",
+  "version": "0.1.0",
+  "description": "NextPress CLI — plugin management and project tools",
+  "bin": {
+    "nextpress": "./bin/nextpress.mjs"
+  },
+  "type": "module",
+  "dependencies": {
+    "kleur": "^4.1.5",
+    "execa": "^8.0.1"
+  }
+}

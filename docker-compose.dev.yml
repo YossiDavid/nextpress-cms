@@ -1,0 +1,25 @@
+# Minimal dev setup — Postgres only.
+# Use this when running the Next.js app locally without Docker.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   pnpm dev:web
+
+services:
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: nextpress
+      POSTGRES_PASSWORD: nextpress
+      POSTGRES_DB: nextpress
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextpress"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata_dev:
