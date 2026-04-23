@@ -1,6 +1,6 @@
 {
 	"name": "create-nextpress-cms",
-	"version": "0.1.1",
+	"version": "0.1.5",
 	"description": "Create a new NextPress project",
 	"keywords": [
 		"nextpress",
@@ -8,10 +8,10 @@
 		"nextjs",
 		"ecommerce"
 	],
-	"homepage": "https://github.com/nextpress-cms/nextpress",
+	"homepage": "https://github.com/YossiDavid/nextpress-cms",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/nextpress-cms/nextpress.git",
+		"url": "https://github.com/YossiDavid/nextpress-cms.git",
 		"directory": "packages/create-nextpress"
 	},
 	"license": "MIT",

@@ -4,12 +4,15 @@ import kleur from 'kleur';
 import { execa } from 'execa';
 import tiged from 'tiged';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const { bold, green, cyan, yellow, red, dim } = kleur;
 
-// Update this when the repo is published
-const NEXTPRESS_REPO = 'nextpress-cms/nextpress';
+const NEXTPRESS_REPO = 'YossiDavid/nextpress-cms';
+
+// Accept directory as first CLI argument (e.g. npx create-nextpress-cms . or npx create-nextpress-cms my-site)
+const argDir = process.argv[2];
+const inPlace = argDir === '.';
 
 console.log('');
 console.log(bold().cyan('  NextPress'));
@@ -19,12 +22,12 @@ console.log('');
 const response = await prompts(
   [
     {
-      type: 'text',
+      type: inPlace ? null : 'text',
       name: 'projectName',
       message: 'Project name:',
-      initial: 'my-nextpress-site',
+      initial: argDir ?? 'my-nextpress-site',
       validate: (v) =>
-        /^[a-z0-9-_]+$/.test(v) || 'Use lowercase letters, numbers, hyphens or underscores',
+        v === '.' || /^[a-z0-9-_]+$/.test(v) || 'Use lowercase letters, numbers, hyphens or underscores',
     },
     {
       type: 'text',
@@ -61,12 +64,6 @@ const response = await prompts(
       message: 'Admin password:',
       validate: (v) => v.length >= 8 || 'Password must be at least 8 characters',
     },
-    {
-      type: 'confirm',
-      name: 'autoSetup',
-      message: 'Run install + database setup automatically?',
-      initial: true,
-    },
   ],
   {
     onCancel: () => {
@@ -76,8 +73,9 @@ const response = await prompts(
   },
 );
 
-const { projectName, siteTitle, database, adminEmail, adminPassword, databaseUrl, autoSetup } = response;
-const projectDir = join(process.cwd(), projectName);
+const projectName = inPlace ? '.' : (response.projectName ?? argDir ?? 'my-nextpress-site');
+const { siteTitle, database, adminEmail, adminPassword, databaseUrl } = response;
+const projectDir = inPlace ? process.cwd() : resolve(process.cwd(), projectName);
 
 function step(msg) {
   process.stdout.write(`\n  ${cyan('→')} ${msg}... `);
@@ -91,22 +89,24 @@ function warn(msg) {
 
 console.log('');
 
-// 1. Check target directory
-if (existsSync(projectDir)) {
-  console.error(red(`\n  Error: "${projectName}" already exists.\n`));
-  process.exit(1);
+// 1. Download NextPress
+if (inPlace) {
+  step('Downloading NextPress into current directory');
+} else {
+  if (existsSync(projectDir)) {
+    console.error(red(`\n  Error: "${projectName}" already exists.\n`));
+    process.exit(1);
+  }
+  step('Downloading NextPress');
 }
 
-// 2. Download NextPress via degit (no git history)
-step('Downloading NextPress');
 try {
   const emitter = tiged(NEXTPRESS_REPO, { disableCache: true, force: true });
   await emitter.clone(projectDir);
   ok();
 } catch {
-  // Fallback: git clone (works when repo not on GitHub yet, e.g. local dev)
   try {
-    mkdirSync(projectDir, { recursive: true });
+    if (!inPlace) mkdirSync(projectDir, { recursive: true });
     warn('degit failed, trying git clone');
     await execa('git', ['clone', '--depth=1', `https://github.com/${NEXTPRESS_REPO}.git`, projectDir], {
       stdio: 'ignore',
@@ -118,7 +118,7 @@ try {
   }
 }
 
-// 3. Write .env.local
+// 2. Write .env.local
 step('Writing .env.local');
 const dbUrl =
   database === 'postgres-docker'
@@ -143,83 +143,81 @@ const envContent = [
 writeFileSync(join(projectDir, '.env.local'), envContent);
 ok();
 
-// 4. Auto setup
-if (autoSetup) {
-  step('Installing dependencies');
-  try {
-    await execa('pnpm', ['install'], { cwd: projectDir, stdio: 'ignore' });
-    ok();
-  } catch {
-    warn('install failed — run `pnpm install` manually');
-  }
+// 3. Install dependencies
+step('Installing dependencies');
+try {
+  await execa('pnpm', ['install'], { cwd: projectDir, stdio: 'ignore' });
+  ok();
+} catch {
+  warn('install failed — run `pnpm install` manually');
+}
 
-  if (database === 'postgres-docker') {
-    step('Starting database (Docker)');
-    try {
-      // Only start the db service, not the full stack
-      await execa('docker', ['compose', '-f', 'docker-compose.dev.yml', 'up', '-d'], {
-        cwd: projectDir,
-        stdio: 'ignore',
-      });
-      ok();
-      // Wait for Postgres to be ready
-      await new Promise((r) => setTimeout(r, 3000));
-    } catch {
-      warn('docker compose failed — start Postgres manually');
-    }
-  }
+// 4. Generate Prisma client (postinstall should handle this, but be explicit)
+step('Generating Prisma client');
+try {
+  await execa('pnpm', ['--filter', '@nextpress/db', 'db:generate'], { cwd: projectDir, stdio: 'ignore' });
+  ok();
+} catch {
+  warn('prisma generate failed — run `pnpm --filter @nextpress/db db:generate` manually');
+}
 
-  step('Running database migrations');
+// 5. Start database if using Docker
+if (database === 'postgres-docker') {
+  step('Starting database (Docker)');
   try {
-    await execa('pnpm', ['db:migrate'], { cwd: projectDir, stdio: 'ignore' });
-    ok();
-  } catch {
-    warn('migration failed — run `pnpm db:migrate` manually');
-  }
-
-  step('Seeding database');
-  try {
-    await execa('pnpm', ['db:seed'], {
+    await execa('docker', ['compose', '-f', 'docker-compose.dev.yml', 'up', '-d'], {
       cwd: projectDir,
       stdio: 'ignore',
-      env: {
-        ...process.env,
-        ADMIN_EMAIL: adminEmail,
-        ADMIN_PASSWORD: adminPassword,
-        SITE_TITLE: siteTitle,
-      },
     });
     ok();
+    // Wait for Postgres to be ready
+    process.stdout.write(dim(' waiting for Postgres'));
+    await new Promise((r) => setTimeout(r, 4000));
   } catch {
-    warn('seed failed — run `pnpm db:seed` manually');
+    warn('docker compose failed — start Postgres manually, then run `pnpm db:migrate && pnpm db:seed`');
   }
 }
 
-// 5. Done
+// 6. Run migrations
+step('Running database migrations');
+try {
+  await execa('pnpm', ['db:migrate'], { cwd: projectDir, stdio: 'ignore' });
+  ok();
+} catch {
+  warn('migration failed — run `pnpm db:migrate` manually');
+}
+
+// 7. Seed database
+step('Seeding database');
+try {
+  await execa('pnpm', ['db:seed'], {
+    cwd: projectDir,
+    stdio: 'ignore',
+    env: {
+      ...process.env,
+      ADMIN_EMAIL: adminEmail,
+      ADMIN_PASSWORD: adminPassword,
+      SITE_TITLE: siteTitle,
+    },
+  });
+  ok();
+} catch {
+  warn('seed failed — run `pnpm db:seed` manually');
+}
+
+// 8. Done
 console.log('\n');
 console.log(bold().green('  ✔ NextPress is ready!'));
 console.log('');
 
-if (!autoSetup) {
-  console.log(bold('  Next steps:'));
-  console.log('');
-  console.log(`  ${cyan('1.')} cd ${projectName}`);
-  console.log(`  ${cyan('2.')} pnpm install`);
-  if (database === 'postgres-docker') {
-    console.log(`  ${cyan('3.')} docker compose -f docker-compose.dev.yml up -d`);
-    console.log(`  ${cyan('4.')} pnpm db:migrate && pnpm db:seed`);
-    console.log(`  ${cyan('5.')} pnpm dev:web`);
-  } else {
-    console.log(`  ${cyan('3.')} pnpm db:migrate && pnpm db:seed`);
-    console.log(`  ${cyan('4.')} pnpm dev:web`);
-  }
-  console.log('');
-} else {
+if (!inPlace) {
   console.log(`  ${cyan('1.')} cd ${projectName}`);
   console.log(`  ${cyan('2.')} pnpm dev:web`);
-  console.log('');
+} else {
+  console.log(`  ${cyan('1.')} pnpm dev:web`);
 }
 
+console.log('');
 console.log(`  ${bold('Admin:')}    ${cyan('http://localhost:3000/admin')}`);
 console.log(`  ${bold('Site:')}     ${cyan('http://localhost:3000')}`);
 console.log(`  ${bold('Login:')}    ${cyan(adminEmail)}`);
