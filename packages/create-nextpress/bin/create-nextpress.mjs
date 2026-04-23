@@ -146,7 +146,11 @@ const envContent = [
   `UPLOAD_URL="http://localhost:3000/uploads"`,
 ].join('\n') + '\n';
 
+// Write to root (for Prisma CLI / db:migrate / db:seed)
 writeFileSync(join(projectDir, '.env.local'), envContent);
+// Write to apps/web (Next.js reads env from its own directory)
+mkdirSync(join(projectDir, 'apps', 'web'), { recursive: true });
+writeFileSync(join(projectDir, 'apps', 'web', '.env.local'), envContent);
 ok();
 
 // 3. Install dependencies
