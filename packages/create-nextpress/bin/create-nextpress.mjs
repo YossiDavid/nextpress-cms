@@ -12,7 +12,7 @@ const NEXTPRESS_REPO = 'YossiDavid/nextpress-cms';
 
 // Accept directory as first CLI argument (e.g. npx create-nextpress-cms . or npx create-nextpress-cms my-site)
 const argDir = process.argv[2];
-const inPlace = argDir === '.';
+const isInPlace = argDir === '.';
 
 console.log('');
 console.log(bold().cyan('  NextPress'));
@@ -22,7 +22,7 @@ console.log('');
 const response = await prompts(
   [
     {
-      type: inPlace ? null : 'text',
+      type: isInPlace ? null : 'text',
       name: 'projectName',
       message: 'Project name:',
       initial: argDir ?? 'my-nextpress-site',
@@ -73,9 +73,10 @@ const response = await prompts(
   },
 );
 
-const projectName = inPlace ? '.' : (response.projectName ?? argDir ?? 'my-nextpress-site');
+const projectName = isInPlace ? '.' : (response.projectName ?? argDir ?? 'my-nextpress-site');
 const { siteTitle, database, adminEmail, adminPassword, databaseUrl } = response;
-const projectDir = inPlace ? process.cwd() : resolve(process.cwd(), projectName);
+const isInPlace = projectName === '.';
+const projectDir = isInPlace ? process.cwd() : resolve(process.cwd(), projectName);
 
 function step(msg) {
   process.stdout.write(`\n  ${cyan('→')} ${msg}... `);
@@ -90,7 +91,7 @@ function warn(msg) {
 console.log('');
 
 // 1. Download NextPress
-if (inPlace) {
+if (isInPlace) {
   step('Downloading NextPress into current directory');
 } else {
   if (existsSync(projectDir)) {
@@ -106,7 +107,7 @@ try {
   ok();
 } catch {
   try {
-    if (!inPlace) mkdirSync(projectDir, { recursive: true });
+    if (!isInPlace) mkdirSync(projectDir, { recursive: true });
     warn('degit failed, trying git clone');
     await execa('git', ['clone', '--depth=1', `https://github.com/${NEXTPRESS_REPO}.git`, projectDir], {
       stdio: 'ignore',
@@ -210,7 +211,7 @@ console.log('\n');
 console.log(bold().green('  ✔ NextPress is ready!'));
 console.log('');
 
-if (!inPlace) {
+if (!isInPlace) {
   console.log(`  ${cyan('1.')} cd ${projectName}`);
   console.log(`  ${cyan('2.')} pnpm dev:web`);
 } else {
