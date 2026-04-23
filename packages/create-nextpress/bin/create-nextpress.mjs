@@ -12,7 +12,7 @@ const NEXTPRESS_REPO = 'YossiDavid/nextpress-cms';
 
 // Accept directory as first CLI argument (e.g. npx create-nextpress-cms . or npx create-nextpress-cms my-site)
 const argDir = process.argv[2];
-const isInPlace = argDir === '.';
+const argIsInPlace = argDir === '.';
 
 console.log('');
 console.log(bold().cyan('  NextPress'));
@@ -22,7 +22,7 @@ console.log('');
 const response = await prompts(
   [
     {
-      type: isInPlace ? null : 'text',
+      type: argIsInPlace ? null : 'text',
       name: 'projectName',
       message: 'Project name:',
       initial: argDir ?? 'my-nextpress-site',
@@ -73,7 +73,7 @@ const response = await prompts(
   },
 );
 
-const projectName = isInPlace ? '.' : (response.projectName ?? argDir ?? 'my-nextpress-site');
+const projectName = response.projectName ?? argDir ?? 'my-nextpress-site';
 const { siteTitle, database, adminEmail, adminPassword, databaseUrl } = response;
 const isInPlace = projectName === '.';
 const projectDir = isInPlace ? process.cwd() : resolve(process.cwd(), projectName);
