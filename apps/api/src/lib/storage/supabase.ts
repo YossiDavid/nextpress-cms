@@ -1,7 +1,7 @@
 import type { StorageDriver } from '../storage.js';
 
 // Requires: pnpm add @supabase/supabase-js
-// Env vars: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_STORAGE_BUCKET (default: media)
+// Env vars: SUPABASE_URL, SUPABASE_SECRET_KEY, SUPABASE_STORAGE_BUCKET (default: media)
 
 export const supabaseDriver: StorageDriver = {
   async upload(buffer, filename, mimeType) {
@@ -30,7 +30,7 @@ export const supabaseDriver: StorageDriver = {
 
 function buildClient(createClient: Function) {
   const url = process.env['SUPABASE_URL'];
-  const key = process.env['SUPABASE_SERVICE_ROLE_KEY'];
-  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  const key = process.env['SUPABASE_SECRET_KEY'];
+  if (!url || !key) throw new Error('Missing SUPABASE_URL or SUPABASE_SECRET_KEY');
   return createClient(url, key);
 }

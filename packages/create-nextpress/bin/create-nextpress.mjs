@@ -281,17 +281,17 @@ if (database === 'postgres-docker') {
     process.stdout.write(dim(' waiting for Postgres'));
     await new Promise((r) => setTimeout(r, 4000));
   } catch {
-    warn('docker compose failed — start Postgres manually, then run `pnpm db:migrate && pnpm db:seed`');
+    warn('docker compose failed — start Postgres manually, then run `pnpm db:deploy && pnpm db:seed`');
   }
 }
 
 // 6. Run migrations
 step('Running database migrations');
 try {
-  await execa('pnpm', ['db:migrate'], { cwd: projectDir, stdio: 'ignore' });
+  await execa('pnpm', ['db:deploy'], { cwd: projectDir, stdio: 'ignore' });
   ok();
 } catch {
-  warn('migration failed — run `pnpm db:migrate` manually');
+  warn('migration failed — run \`pnpm db:deploy\` manually');
 }
 
 // 7. Seed database

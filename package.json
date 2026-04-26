@@ -8,8 +8,10 @@
     "build": "turbo build",
     "typecheck": "turbo typecheck",
     "db:migrate": "turbo db:migrate",
+    "db:deploy": "pnpm --filter @nextpress/db db:deploy",
     "db:studio": "cd packages/db && pnpm prisma studio",
-    "db:seed": "cd packages/db && pnpm tsx src/seed.ts"
+    "db:seed": "cd packages/db && pnpm tsx src/seed.ts",
+    "publish:cli": "pnpm --filter create-nextpress-cms publish --access public --no-git-checks"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

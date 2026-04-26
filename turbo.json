@@ -4,6 +4,7 @@
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "dist/**"] },
     "dev": { "cache": false, "persistent": true },
     "typecheck": { "dependsOn": ["^build"] },
-    "db:migrate": { "cache": false }
+    "db:migrate": { "cache": false },
+    "db:deploy": { "cache": false }
   }
 }

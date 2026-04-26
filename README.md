@@ -61,8 +61,8 @@ Open `.env.local` and set:
 | `DATABASE_URL` | Supabase → Settings → Database → **Connection pooling** URI (port 6543, add `?pgbouncer=true`) |
 | `DIRECT_URL` | Supabase → Settings → Database → **Direct connection** URI (port 5432) |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API → `anon` / `publishable` key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API → **Publishable key** |
+| `SUPABASE_SECRET_KEY` | Supabase → Settings → API → `service_role` key |
 | `NEXT_PUBLIC_URL` | `http://localhost:3000` for local dev |
 | `ADMIN_EMAIL` | Email for your first admin account |
 | `SITE_TITLE` | Your site name |
@@ -87,10 +87,12 @@ Your project ref is the subdomain in your Supabase URL: `https://<project-ref>.s
 ### Step 5 — Run database migrations
 
 ```bash
-pnpm db:migrate
+pnpm db:deploy
 ```
 
 This applies all Prisma migrations to your Supabase Postgres database.
+
+> **`db:deploy` vs `db:migrate`** — Use `db:deploy` for first-time setup and production (no drift detection, no prompts). Use `db:migrate` only during active schema development — it creates new migration files interactively.
 
 ---
 
@@ -148,8 +150,8 @@ docker compose exec web pnpm db:migrate
 | `DATABASE_URL` | Supabase Postgres pooled connection (port 6543, `?pgbouncer=true`) | ✓ |
 | `DIRECT_URL` | Supabase Postgres direct connection (port 5432, for migrations) | ✓ |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | ✓ |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/publishable key | ✓ |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only, never expose to client) | ✓ |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key | ✓ |
+| `SUPABASE_SECRET_KEY` | Supabase secret key — server-side only, never expose to client (Dashboard → Settings → API → **Secret key**) | ✓ |
 | `NEXT_PUBLIC_URL` | Public app URL | ✓ |
 | `ADMIN_EMAIL` | Email for the first admin (used by `db:seed`) | ✓ |
 | `ADMIN_UUID` | Supabase Auth UUID for the first admin (used by `db:seed`) | ✓ |
