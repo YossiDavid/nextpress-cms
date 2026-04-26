@@ -52,7 +52,7 @@ const plugin: NextPressPlugin = {
     // ctx.registerAdminPage?.({
     //   label: '${name}',
     //   href: '/admin/plugins/${slug}',
-    //   icon: '🔌',
+    
     // });
   },
 };

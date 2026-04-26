@@ -2,13 +2,13 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
 import { sendOrderStatusUpdate } from '@nextpress/email';
 import { hooks } from '@nextpress/core';
 
 export async function updateOrderStatus(orderId: string, status: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const order = await prisma.order.update({

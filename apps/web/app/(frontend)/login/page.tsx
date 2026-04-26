@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/frontend/ui/card';
 import { Input } from '@/components/frontend/ui/input';
 import { Label } from '@/components/frontend/ui/label';
@@ -19,12 +19,12 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     const fd = new FormData(e.currentTarget);
-    const result = await signIn('credentials', {
-      email: fd.get('email'),
-      password: fd.get('password'),
-      redirect: false,
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: fd.get('email') as string,
+      password: fd.get('password') as string,
     });
-    if (result?.error) {
+    if (authError) {
       setError('אימייל או סיסמה שגויים');
       setLoading(false);
     } else {

@@ -9,16 +9,16 @@
   },
   "scripts": {
     "postinstall": "prisma generate",
-    "db:migrate": "prisma migrate dev --skip-generate",
-    "db:generate": "prisma generate",
-    "db:seed": "tsx src/seed.ts"
+    "db:migrate": "dotenv -e ../../.env.local -- prisma migrate dev --skip-generate",
+    "db:deploy": "dotenv -e ../../.env.local -- prisma migrate deploy",
+    "db:generate": "dotenv -e ../../.env.local -- prisma generate",
+    "db:seed": "dotenv -e ../../.env.local -- tsx src/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.17.0",
-    "bcryptjs": "^2.4.3"
+    "@prisma/client": "^5.17.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
+    "dotenv-cli": "^7.4.2",
     "prisma": "^5.17.0",
     "tsx": "^4.16.0"
   }

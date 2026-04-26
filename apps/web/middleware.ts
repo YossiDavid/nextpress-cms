@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { updateSession } from '@/lib/supabase/middleware';
 
 // ─── Simple in-memory rate limiter ───────────────────────────────────────────
 // Keyed by IP + route group; entries expire after their window.
@@ -39,9 +39,6 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
 
-  // Skip auth API (NextAuth handles its own flow)
-  if (pathname.startsWith('/api/auth')) return NextResponse.next();
-
   // Rate limit: public API — 60 req / 1 min per IP
   if (pathname.startsWith('/api/v1')) {
     if (isRateLimited(`api:${ip}`, 60, 60_000)) return rateLimitResponse();
@@ -52,19 +49,20 @@ export async function middleware(req: NextRequest) {
     if (isRateLimited(`auth:${ip}`, 10, 5 * 60_000)) return rateLimitResponse();
   }
 
-  // Admin routes — require auth token; role is enforced in each page
+  // Refresh Supabase session cookies and get current user
+  const { supabaseResponse, user } = await updateSession(req);
+
+  // Admin routes — require auth; role is enforced in each page
   if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-    if (!token) return NextResponse.redirect(new URL('/admin/login', req.url));
+    if (!user) return NextResponse.redirect(new URL('/admin/login', req.url));
   }
 
   // Frontend account routes — redirect unauthenticated users to /login
   if (pathname.startsWith('/account')) {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-    if (!token) return NextResponse.redirect(new URL('/login', req.url));
+    if (!user) return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  return NextResponse.next();
+  return supabaseResponse;
 }
 
 export const config = {

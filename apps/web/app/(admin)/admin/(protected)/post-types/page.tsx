@@ -1,8 +1,8 @@
 import { prisma } from '@nextpress/db';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/admin/ui/card';
+import { Badge } from '@/components/admin/ui/badge';
+import { Button } from '@/components/admin/ui/button';
 
 export default async function PostTypesPage() {
   const postTypes = await prisma.postType.findMany({
@@ -27,7 +27,7 @@ export default async function PostTypesPage() {
             <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{pt.icon ?? '📄'}</span>
+                  <span className="text-xl">{pt.icon ?? ''}</span>
                   <div>
                     <p className="font-medium">{pt.name}</p>
                     {pt.description && <p className="text-xs text-muted-foreground">{pt.description}</p>}

@@ -13,7 +13,8 @@
     "@nextpress/theme-engine": "workspace:*",
     "@prisma/client": "^5.17.0",
     "next": "^15.0.0",
-    "next-auth": "^5.0.0-beta.20",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.4",
     "react": "^18.3.0"
   }
 }

@@ -1,11 +1,11 @@
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
+import { Badge } from '@/components/admin/ui/badge';
+import { Button } from '@/components/admin/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
+import { Separator } from '@/components/admin/ui/separator';
 import { RevenueChart } from '@/components/admin/RevenueChart';
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -20,7 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
 function fmt(n: number) { return `₪${n.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 
 export default async function DashboardPage() {
-  const session = await auth();
+  const session = await getSession();
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

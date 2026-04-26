@@ -1,7 +1,7 @@
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { getSession } from '@/lib/auth-session';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
+import { Badge } from '@/components/admin/ui/badge';
 import { UserRoleSelect } from '@/components/admin/UserRoleSelect';
 
 const ROLE_LABELS: Record<string, string> = { ADMIN: 'מנהל', EDITOR: 'עורך', VIEWER: 'צופה' };
@@ -10,8 +10,8 @@ const ROLE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
 };
 
 export default async function UsersPage() {
-  const session = await auth();
-  const currentId = (session?.user as { id?: string } | undefined)?.id ?? '';
+  const session = await getSession();
+  const currentId = session?.user?.id ?? '';
 
   const users = await prisma.user.findMany({
     orderBy: { createdAt: 'asc' },

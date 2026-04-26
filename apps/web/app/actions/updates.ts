@@ -3,7 +3,7 @@
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { revalidatePath } from 'next/cache';
 
 const execAsync = promisify(exec);
@@ -56,8 +56,8 @@ export async function getVersionInfo(): Promise<VersionInfo> {
 }
 
 export async function runUpdate(): Promise<{ success: boolean; output: string }> {
-  const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== 'ADMIN') {
+  const session = await getSession();
+  if (session?.user?.role !== 'ADMIN') {
     return { success: false, output: 'אין הרשאה' };
   }
 

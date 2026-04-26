@@ -1,14 +1,12 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { resetPassword } from '@/app/actions/auth';
+import { createClient } from '@/lib/supabase/client';
 
 function ResetPasswordForm() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get('token') ?? '';
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -18,24 +16,17 @@ function ResetPasswordForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (password !== confirm) { setError('הסיסמאות אינן תואמות'); return; }
+    if (password.length < 8) { setError('הסיסמה חייבת להכיל לפחות 8 תווים'); return; }
     setLoading(true);
     setError('');
-    const result = await resetPassword(token, password);
-    if (result.success) {
-      router.push('/login?reset=1');
-    } else {
-      setError(result.error ?? 'שגיאה');
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.updateUser({ password });
+    if (authError) {
+      setError('הקישור אינו תקף או פג תוקפו');
       setLoading(false);
+    } else {
+      router.push('/login?reset=1');
     }
-  }
-
-  if (!token) {
-    return (
-      <div className="text-center space-y-4">
-        <p className="text-destructive">קישור לא תקף</p>
-        <Link href="/forgot-password" className="text-sm text-primary hover:underline">בקש קישור חדש</Link>
-      </div>
-    );
   }
 
   return (

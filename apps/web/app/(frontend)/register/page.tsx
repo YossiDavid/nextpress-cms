@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import { register } from '@/app/actions/account';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/frontend/ui/card';
 import { Input } from '@/components/frontend/ui/input';
@@ -27,12 +27,12 @@ export default function RegisterPage() {
       return;
     }
     // Auto-login after registration
-    const res = await signIn('credentials', {
-      email: fd.get('email'),
-      password: fd.get('password'),
-      redirect: false,
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: fd.get('email') as string,
+      password: fd.get('password') as string,
     });
-    if (res?.error) { setError('ההרשמה הצליחה אך ההתחברות נכשלה. נסה להתחבר ידנית.'); setLoading(false); return; }
+    if (authError) { setError('ההרשמה הצליחה אך ההתחברות נכשלה. נסה להתחבר ידנית.'); setLoading(false); return; }
     router.push('/account');
   }
 

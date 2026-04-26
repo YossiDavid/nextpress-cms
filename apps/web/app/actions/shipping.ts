@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 
 export async function createShippingMethod(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const freeAboveStr = formData.get('freeAbove') as string;
@@ -24,7 +24,7 @@ export async function createShippingMethod(formData: FormData) {
 }
 
 export async function toggleShippingMethod(id: string, active: boolean) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.shippingMethod.update({ where: { id }, data: { active } });
@@ -32,7 +32,7 @@ export async function toggleShippingMethod(id: string, active: boolean) {
 }
 
 export async function deleteShippingMethod(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.shippingMethod.delete({ where: { id } });
@@ -40,7 +40,7 @@ export async function deleteShippingMethod(id: string) {
 }
 
 export async function saveTaxRate(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const rate = Number(formData.get('taxRate'));

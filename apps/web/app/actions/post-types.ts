@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 
 export async function createPostType(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const name = formData.get('name') as string;
@@ -24,7 +24,7 @@ export async function createPostType(formData: FormData) {
 }
 
 export async function updatePostType(id: string, formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const name = formData.get('name') as string;
@@ -42,7 +42,7 @@ export async function updatePostType(id: string, formData: FormData) {
 }
 
 export async function deletePostType(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.postType.delete({ where: { id } });
@@ -51,7 +51,7 @@ export async function deletePostType(id: string) {
 }
 
 export async function addField(postTypeId: string, formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const label = formData.get('label') as string;
@@ -80,7 +80,7 @@ export async function addField(postTypeId: string, formData: FormData) {
 }
 
 export async function updateField(fieldId: string, formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const label = formData.get('label') as string;
@@ -97,7 +97,7 @@ export async function updateField(fieldId: string, formData: FormData) {
 }
 
 export async function deleteField(fieldId: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const field = await prisma.fieldDefinition.delete({
@@ -109,7 +109,7 @@ export async function deleteField(fieldId: string) {
 }
 
 export async function reorderFields(postTypeId: string, fieldIds: string[]) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await Promise.all(

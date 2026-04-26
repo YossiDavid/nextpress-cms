@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { getCart, saveCart, calculateCart } from '@/lib/cart';
 
 export async function applyCoupon(formData: FormData) {
@@ -35,7 +35,7 @@ export async function removeCoupon() {
 }
 
 export async function createCoupon(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const type = formData.get('type') as 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
@@ -56,7 +56,7 @@ export async function createCoupon(formData: FormData) {
 }
 
 export async function toggleCoupon(id: string, active: boolean) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.coupon.update({ where: { id }, data: { active } });
@@ -64,7 +64,7 @@ export async function toggleCoupon(id: string, active: boolean) {
 }
 
 export async function deleteCoupon(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.coupon.delete({ where: { id } });

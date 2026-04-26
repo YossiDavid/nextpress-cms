@@ -1,9 +1,19 @@
 'use server';
 
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
-import bcrypt from 'bcryptjs';
+import { createClient } from '@/lib/supabase/server';
+
+// Admin Supabase client (service role) for user creation
+function createAdminClient() {
+  const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function register(formData: FormData) {
   const name = (formData.get('name') as string).trim();
@@ -17,13 +27,23 @@ export async function register(formData: FormData) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return { error: 'כתובת האימייל כבר רשומה' };
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const supabaseAdmin = createAdminClient();
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+
+  if (authError || !authData?.user) {
+    return { error: 'שגיאה ביצירת החשבון' };
+  }
+
+  const uuid = authData.user.id;
 
   await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
-      data: { email, name, passwordHash, role: 'CUSTOMER' },
+      data: { id: uuid, email, name, role: 'CUSTOMER' },
     });
-    // Link or create Customer record
     const existingCustomer = await tx.customer.findUnique({ where: { email } });
     if (existingCustomer) {
       await tx.customer.update({ where: { email }, data: { userId: user.id, name } });
@@ -36,7 +56,7 @@ export async function register(formData: FormData) {
 }
 
 export async function updateProfile(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.email) redirect('/login');
 
   const name = (formData.get('name') as string).trim();
@@ -53,22 +73,15 @@ export async function updateProfile(formData: FormData) {
 }
 
 export async function changePassword(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.email) redirect('/login');
 
-  const current = formData.get('current') as string;
   const next = formData.get('next') as string;
-  if (!current || !next || next.length < 6) return { error: 'נא למלא את כל השדות' };
+  if (!next || next.length < 6) return { error: 'נא למלא את כל השדות' };
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user?.passwordHash) return { error: 'שגיאה' };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: next });
+  if (error) return { error: 'שגיאה בעדכון הסיסמה' };
 
-  const valid = await bcrypt.compare(current, user.passwordHash);
-  if (!valid) return { error: 'הסיסמה הנוכחית שגויה' };
-
-  await prisma.user.update({
-    where: { email: session.user.email },
-    data: { passwordHash: await bcrypt.hash(next, 12) },
-  });
   return { success: true };
 }

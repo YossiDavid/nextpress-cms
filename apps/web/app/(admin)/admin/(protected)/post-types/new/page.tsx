@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { createPostType } from '@/app/actions/post-types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
+import { Button } from '@/components/admin/ui/button';
+import { Input } from '@/components/admin/ui/input';
+import { Label } from '@/components/admin/ui/label';
 
 export default function NewPostTypePage() {
   return (
@@ -38,7 +38,7 @@ export default function NewPostTypePage() {
 
             <div className="space-y-1.5">
               <Label htmlFor="icon">אייקון (אמוג&apos;י)</Label>
-              <Input id="icon" name="icon" placeholder="📄" className="w-24 text-center text-xl" />
+              <Input id="icon" name="icon" placeholder="icon" className="w-24 text-center text-xl" />
             </div>
 
             <div className="flex items-center gap-2">

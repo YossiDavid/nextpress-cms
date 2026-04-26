@@ -98,7 +98,7 @@ export function ProductTemplate({ post, variations, categories = [], tags = [] }
               </div>
             ) : (
               <div className="w-full aspect-square bg-muted rounded-xl flex items-center justify-center text-6xl text-muted-foreground">
-                🛍️
+                
               </div>
             )}
           </div>

@@ -145,7 +145,7 @@ export default async function CheckoutPage() {
             <h2 className="font-semibold text-lg">תשלום</h2>
             {process.env.STRIPE_SECRET_KEY ? (
               <div className="rounded-md bg-muted/50 border border-border p-4 flex items-center gap-3 text-sm">
-                <span className="text-xl">💳</span>
+                
                 <div>
                   <p className="font-medium">תשלום מאובטח דרך Stripe</p>
                   <p className="text-muted-foreground text-xs mt-0.5">תועבר לדף תשלום מאובטח לאחר אישור ההזמנה</p>

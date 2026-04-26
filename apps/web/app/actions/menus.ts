@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 
 export async function createMenu(formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const name = formData.get('name') as string;
@@ -17,7 +17,7 @@ export async function createMenu(formData: FormData) {
 }
 
 export async function deleteMenu(id: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.menu.delete({ where: { id } });
@@ -25,7 +25,7 @@ export async function deleteMenu(id: string) {
 }
 
 export async function addMenuItem(menuId: string, formData: FormData) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const label = formData.get('label') as string;
@@ -43,7 +43,7 @@ export async function addMenuItem(menuId: string, formData: FormData) {
 }
 
 export async function deleteMenuItem(itemId: string) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   const item = await prisma.menuItem.delete({ where: { id: itemId } });

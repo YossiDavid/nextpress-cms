@@ -2,11 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 
 async function requireAdmin() {
-  const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== 'ADMIN') {
+  const session = await getSession();
+  if (session?.user?.role !== 'ADMIN') {
     throw new Error('Unauthorized');
   }
 }
@@ -19,8 +19,8 @@ export async function updateUserRole(userId: string, role: 'ADMIN' | 'EDITOR' | 
 
 export async function deleteUser(userId: string) {
   await requireAdmin();
-  const session = await auth();
-  const currentId = (session?.user as { id?: string } | undefined)?.id;
+  const session = await getSession();
+  const currentId = session?.user?.id;
   if (userId === currentId) throw new Error('Cannot delete your own account');
   await prisma.user.delete({ where: { id: userId } });
   revalidatePath('/admin/users');

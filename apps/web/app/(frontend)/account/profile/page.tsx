@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { createClient } from '@/lib/supabase/client';
 import { updateProfile, changePassword } from '@/app/actions/account';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/frontend/ui/card';
 import { Input } from '@/components/frontend/ui/input';
@@ -11,18 +11,30 @@ import { Button } from '@/components/frontend/ui/button';
 import { Separator } from '@/components/frontend/ui/separator';
 
 export default function ProfilePage() {
-  const { data: session, update } = useSession();
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [profileMsg, setProfileMsg] = useState('');
   const [pwMsg, setPwMsg] = useState('');
   const [profileLoading, setProfileLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setEmail(data.user.email ?? '');
+      }
+    });
+    fetch('/api/v1/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.data?.name) setName(d.data.name);
+    });
+  }, []);
 
   async function handleProfile(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setProfileLoading(true);
     setProfileMsg('');
     await updateProfile(new FormData(e.currentTarget));
-    await update();
     setProfileMsg('הפרטים עודכנו!');
     setProfileLoading(false);
   }
@@ -52,11 +64,11 @@ export default function ProfilePage() {
             <form onSubmit={handleProfile} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">שם מלא</Label>
-                <Input id="name" name="name" defaultValue={session?.user?.name ?? ''} required />
+                <Input id="name" name="name" defaultValue={name} required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email-display">אימייל</Label>
-                <Input id="email-display" value={session?.user?.email ?? ''} disabled dir="ltr" className="opacity-60" />
+                <Input id="email-display" value={email} disabled dir="ltr" className="opacity-60" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">טלפון</Label>
@@ -76,15 +88,11 @@ export default function ProfilePage() {
           <CardContent>
             <form onSubmit={handlePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="current">סיסמה נוכחית</Label>
-                <Input id="current" name="current" type="password" required dir="ltr" />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="next">סיסמה חדשה</Label>
                 <Input id="next" name="next" type="password" required dir="ltr" placeholder="לפחות 6 תווים" />
               </div>
               {pwMsg && (
-                <p className={`text-sm ${pwMsg.includes('שגויה') || pwMsg.includes('מלא') ? 'text-destructive' : 'text-green-500'}`}>
+                <p className={`text-sm ${pwMsg.includes('שגיאה') || pwMsg.includes('מלא') ? 'text-destructive' : 'text-green-500'}`}>
                   {pwMsg}
                 </p>
               )}

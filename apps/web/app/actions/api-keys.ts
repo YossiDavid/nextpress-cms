@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { randomBytes } from 'node:crypto';
 
 async function requireAdmin() {
-  const session = await auth();
-  if ((session?.user as { role?: string } | undefined)?.role !== 'ADMIN') {
+  const session = await getSession();
+  if (session?.user?.role !== 'ADMIN') {
     throw new Error('Unauthorized');
   }
 }

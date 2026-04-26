@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import Image from 'next/image';
 import type { Media } from '@prisma/client';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/admin/ui/card';
 
 interface Props {
   initialMedia: Media[];
@@ -82,7 +82,7 @@ export function MediaLibrary({ initialMedia, onSelect }: Props) {
                   sizes="(max-width: 768px) 25vw, 12vw"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full"><span className="text-2xl">📄</span></div>
+                <div className="flex items-center justify-center h-full"><span className="text-xs text-muted-foreground">file</span></div>
               )}
               <button
                 className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold shadow"

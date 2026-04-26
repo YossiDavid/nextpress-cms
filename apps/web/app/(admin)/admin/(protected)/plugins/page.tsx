@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { prisma } from '@nextpress/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
+import { Badge } from '@/components/admin/ui/badge';
 import { PluginToggle } from './PluginToggle';
 
 interface PluginMeta {

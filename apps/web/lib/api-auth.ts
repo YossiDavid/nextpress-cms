@@ -1,10 +1,10 @@
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { prisma } from '@nextpress/db';
 import { NextRequest } from 'next/server';
 
 export async function authenticateRequest(req: NextRequest): Promise<boolean> {
   // Check session first
-  const session = await auth();
+  const session = await getSession();
   if (session?.user) return true;
 
   // Check API key

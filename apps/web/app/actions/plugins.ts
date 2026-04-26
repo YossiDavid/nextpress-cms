@@ -3,10 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@nextpress/db';
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 
 export async function togglePlugin(pluginId: string, active: boolean) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await prisma.option.upsert({

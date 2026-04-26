@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { prisma } from '@nextpress/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -6,7 +6,7 @@ import Link from 'next/link';
 export const metadata = { title: 'החשבון שלי' };
 
 export default async function AccountPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.email) redirect('/login');
 
   const customer = await prisma.customer.findUnique({

@@ -1,7 +1,7 @@
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/admin/Sidebar';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/admin/ui/tooltip';
 import { initPlugins } from '@/lib/init-plugins';
 import type { Metadata } from 'next';
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect('/admin/login');
 
   await initPlugins();

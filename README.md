@@ -14,49 +14,155 @@ NextPress is a headless CMS + e-commerce platform with a full admin UI. It gives
 - **Background jobs** — email queue, media processing via BullMQ
 - **Scheduled publishing** — cron-based post scheduler
 
-## Quick Start
+---
 
-### Option 1 — CLI (simplest)
+## Installation
 
-```bash
-npx create-nextpress my-site
-```
+### Prerequisites
 
-The CLI scaffolds the project, generates a secure `AUTH_SECRET`, and optionally runs migrations + seed automatically.
+- Node.js 20+
+- pnpm 9+
+- A [Supabase](https://supabase.com) project (free tier is fine)
+- Supabase CLI: `npm i -g supabase`
 
-### Option 2 — Local dev (Postgres only, no Redis required)
+---
 
-Requirements: Node.js 20+, pnpm 9+, Docker
+### Step 1 — Clone and install
 
 ```bash
 git clone https://github.com/nextpress-cms/nextpress.git
 cd nextpress
-cp .env.example .env.local   # edit ADMIN_EMAIL and ADMIN_PASSWORD
-
-docker compose -f docker-compose.dev.yml up -d   # start Postgres only
 pnpm install
-pnpm db:migrate
-pnpm db:seed
-pnpm dev:web                                      # Next.js only, no Redis needed
 ```
 
-### Option 3 — Full stack with Docker Compose
+---
 
-Runs the web app, background job server, Postgres, and Redis together.
+### Step 2 — Create a Supabase project
+
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard) and create a new project.
+2. Wait for provisioning to complete (~1 minute).
+3. From **Settings → Database**, copy the two connection strings.
+4. From **Settings → API**, copy the `URL`, `anon`/`publishable` key, and `service_role` key.
+
+---
+
+### Step 3 — Configure environment variables
+
+Copy the example file and fill in your values:
 
 ```bash
-git clone https://github.com/nextpress-cms/nextpress.git
-cd nextpress
 cp .env.example .env.local
+```
 
+Open `.env.local` and set:
+
+| Variable | Where to find it |
+|----------|-----------------|
+| `DATABASE_URL` | Supabase → Settings → Database → **Connection pooling** URI (port 6543, add `?pgbouncer=true`) |
+| `DIRECT_URL` | Supabase → Settings → Database → **Direct connection** URI (port 5432) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API → `anon` / `publishable` key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key |
+| `NEXT_PUBLIC_URL` | `http://localhost:3000` for local dev |
+| `ADMIN_EMAIL` | Email for your first admin account |
+| `SITE_TITLE` | Your site name |
+
+---
+
+### Step 4 — Configure and push Supabase auth settings
+
+The `supabase/config.toml` file contains all auth configuration (allowed redirect URLs, password requirements, email settings).
+
+Link to your remote project and push the config:
+
+```bash
+supabase link --project-ref <your-project-ref>
+supabase config push
+```
+
+Your project ref is the subdomain in your Supabase URL: `https://<project-ref>.supabase.co`
+
+---
+
+### Step 5 — Run database migrations
+
+```bash
+pnpm db:migrate
+```
+
+This applies all Prisma migrations to your Supabase Postgres database.
+
+---
+
+### Step 6 — Create the first admin user
+
+Because auth is handled by Supabase, the admin user must be created there first:
+
+1. Go to your Supabase Dashboard → **Authentication → Users**
+2. Click **Add user → Create new user**
+3. Enter your `ADMIN_EMAIL` and a password
+4. Copy the **UUID** shown for the new user
+
+Then seed the database (creates the matching Prisma row + default content):
+
+```bash
+ADMIN_UUID=<paste-uuid-here> pnpm db:seed
+```
+
+Or add `ADMIN_UUID` to `.env.local` first and just run `pnpm db:seed`.
+
+---
+
+### Step 7 — Start the dev server
+
+```bash
+pnpm dev:web
+```
+
+| URL | What |
+|-----|------|
+| `http://localhost:3000` | Frontend |
+| `http://localhost:3000/admin` | Admin panel |
+| `http://localhost:3001` | Background job server (optional) |
+
+Log in at `/admin/login` with the credentials you set in Supabase.
+
+---
+
+### Full stack with Docker Compose (optional)
+
+Runs the web app, background job server, and Redis together. Supabase is still external.
+
+```bash
+cp .env.example .env.local   # fill in all values including Supabase keys
 docker compose up -d
 docker compose exec web pnpm db:migrate
-docker compose exec web pnpm db:seed
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — frontend
-Open [http://localhost:3000/admin](http://localhost:3000/admin) — admin panel
-Credentials: whatever you set in `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+---
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | Supabase Postgres pooled connection (port 6543, `?pgbouncer=true`) | ✓ |
+| `DIRECT_URL` | Supabase Postgres direct connection (port 5432, for migrations) | ✓ |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | ✓ |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/publishable key | ✓ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only, never expose to client) | ✓ |
+| `NEXT_PUBLIC_URL` | Public app URL | ✓ |
+| `ADMIN_EMAIL` | Email for the first admin (used by `db:seed`) | ✓ |
+| `ADMIN_UUID` | Supabase Auth UUID for the first admin (used by `db:seed`) | ✓ |
+| `SITE_TITLE` | Site name shown in admin and emails | — |
+| `UPLOAD_DIR` | Local file upload directory | `./uploads` |
+| `UPLOAD_URL` | Public base URL for uploads | `http://localhost:3000/uploads` |
+| `REDIS_URL` | Redis connection string (only needed for background job server) | — |
+| `RESEND_API_KEY` | Resend API key for transactional email | — |
+| `STRIPE_SECRET_KEY` | Stripe secret key for payments | — |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | — |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key | — |
+
+---
 
 ## Stack
 
@@ -64,10 +170,12 @@ Credentials: whatever you set in `ADMIN_EMAIL` / `ADMIN_PASSWORD`
 |-------|-----------|
 | Frontend + Admin | Next.js 15 App Router (TypeScript strict) |
 | Database ORM | Prisma + PostgreSQL |
-| Auth | NextAuth v5 (Credentials provider) |
+| Auth | Supabase Auth (`@supabase/ssr`) |
 | Background Jobs | Express + BullMQ + Redis |
 | Monorepo | pnpm workspaces + Turborepo |
 | Containerization | Docker Compose |
+
+---
 
 ## Project Structure
 
@@ -83,9 +191,13 @@ nextpress/
 │   ├── theme-engine/   # SlotRegistry + ThemeConfig types
 │   └── create-nextpress/ # npx create-nextpress CLI
 ├── plugins/            # Drop-in plugins directory
+├── supabase/
+│   └── config.toml     # Auth URL config, email settings, redirect allowlist
 └── themes/
     └── default/        # Default theme (header, footer, templates)
 ```
+
+---
 
 ## Creating a Theme
 
@@ -117,6 +229,8 @@ Each slot component is a React Server Component that receives typed props. See `
 
 Activate your theme from the admin panel under **Settings > Active Theme**, or by upserting the `active_theme` option in the database.
 
+---
+
 ## Writing a Plugin
 
 Create a directory under `/plugins/my-plugin/index.ts`:
@@ -131,18 +245,13 @@ const myPlugin: NextPressPlugin = {
   description: 'Example NextPress plugin',
 
   async register({ hooks, db }) {
-    // React to post saves
     hooks.addAction('post.afterSave', async (post) => {
       console.log('Post saved:', (post as { title: string }).title);
     });
 
-    // Filter product prices (e.g., apply membership discount)
     hooks.addFilter('product.price', async (price) => {
       return (price as number) * 0.9; // 10% discount
     });
-
-    // Register a custom post type
-    // hooks.doAction('nextpress.ready') fires after all plugins load
   },
 };
 
@@ -175,6 +284,8 @@ export default myPlugin;
 | `api.response` | API response data |
 | `admin.menu` | Admin sidebar navigation items |
 
+---
+
 ## REST API
 
 All endpoints require authentication via session cookie or `Authorization: Bearer <api-key>` header.
@@ -182,7 +293,7 @@ All endpoints require authentication via session cookie or `Authorization: Beare
 ### Posts
 
 ```
-GET    /api/v1/posts/:type          List posts (supports ?page, ?limit, ?status, ?search)
+GET    /api/v1/posts/:type          List posts (?page, ?limit, ?status, ?search)
 POST   /api/v1/posts/:type          Create post
 GET    /api/v1/posts/:type/:id      Get post
 PUT    /api/v1/posts/:type/:id      Update post
@@ -210,6 +321,12 @@ GET    /api/v1/settings             Get all autoload options
 POST   /api/v1/settings             Upsert an option { key, value }
 ```
 
+### Current user
+
+```
+GET    /api/v1/me                   Returns authenticated user's id, email, name, role
+```
+
 ### Example: Create a post
 
 ```bash
@@ -226,22 +343,7 @@ curl -X POST http://localhost:3000/api/v1/posts/post \
   }'
 ```
 
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | ✓ |
-| `AUTH_SECRET` | Signing secret (min 32 chars) — generate with `openssl rand -base64 32` | ✓ |
-| `NEXT_PUBLIC_URL` | Public app URL | ✓ |
-| `ADMIN_EMAIL` | Initial admin account email (used by `db:seed`) | ✓ |
-| `ADMIN_PASSWORD` | Initial admin account password | ✓ |
-| `SITE_TITLE` | Site name shown in admin and emails | — |
-| `UPLOAD_DIR` | Local file upload directory | `./uploads` |
-| `UPLOAD_URL` | Public base URL for uploads | `http://localhost:3000/uploads` |
-| `REDIS_URL` | Redis connection string (only needed for background server) | — |
-| `RESEND_API_KEY` | Resend API key for transactional email | — |
-
-Copy `.env.example` to `.env.local` and fill in the values.
+---
 
 ## Architecture
 
@@ -250,7 +352,7 @@ Browser
   │
   ├── GET /           → (frontend) layout + page.tsx  (RSC, reads DB directly)
   ├── GET /admin/*    → (admin) layout + pages        (RSC + Client Components)
-  │                                                    Protected by NextAuth middleware
+  │                                                    Protected by Supabase Auth middleware
   └── POST /api/v1/*  → Route Handlers                (session + API key auth)
 
 Background
@@ -260,14 +362,16 @@ Background
         └── cron scheduler (publish scheduled posts)
 
 Database
-  └── PostgreSQL via Prisma
+  └── Supabase Postgres via Prisma
         ├── Posts / PostTypes / FieldDefinitions / FieldValues
-        ├── Users / Sessions
+        ├── Users (id = Supabase Auth UUID)
         ├── Orders / OrderItems / Customers / Coupons
         ├── Media
         ├── Menus / MenuItems
         └── Options / ApiKeys
 ```
+
+---
 
 ## License
 

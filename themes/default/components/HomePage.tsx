@@ -95,7 +95,7 @@ export async function HomePage() {
 											/>
 										) : (
 											<div className="w-full h-40 bg-muted flex items-center justify-center text-3xl text-muted-foreground">
-												🛍️
+												
 											</div>
 										)}
 										<div className="p-4 flex flex-col flex-1 gap-2">

@@ -1,31 +1,43 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard, FileText, File, ShoppingBag, FolderOpen, Tag,
+  Package, Ticket, Truck, Image, Users, KeyRound, Puzzle,
+  Settings, Menu, RefreshCw, type LucideIcon,
+} from 'lucide-react';
 
-const navItems = [
-  { label: 'לוח בקרה', href: '/admin', icon: '📊' },
-  { label: 'פוסטים', href: '/admin/post-types/post', icon: '📝' },
-  { label: 'עמודים', href: '/admin/post-types/page', icon: '📄' },
-  { label: 'מוצרים', href: '/admin/post-types/product', icon: '🛍️' },
-  { label: 'קטגוריות', href: '/admin/product-categories', icon: '📂' },
-  { label: 'תגיות', href: '/admin/product-tags', icon: '🔖' },
-  { label: 'הזמנות', href: '/admin/orders', icon: '📦' },
-  { label: 'קופונים', href: '/admin/coupons', icon: '🏷️' },
-  { label: 'משלוח', href: '/admin/shipping', icon: '🚚' },
-  { label: 'מדיה', href: '/admin/media', icon: '🖼️' },
-  { label: 'משתמשים', href: '/admin/users', icon: '👤' },
-  { label: 'מפתחות API', href: '/admin/api-keys', icon: '🔑' },
-  { label: 'תוספים', href: '/admin/plugins', icon: '🔌' },
-  { label: 'הגדרות', href: '/admin/settings', icon: '⚙️' },
-  { label: 'תפריטים', href: '/admin/menus', icon: '🗂️' },
-  { label: 'עדכונים', href: '/admin/updates', icon: '🔄' },
+const navItems: { label: string; href: string; icon: LucideIcon }[] = [
+  { label: 'לוח בקרה',   href: '/admin',                       icon: LayoutDashboard },
+  { label: 'פוסטים',     href: '/admin/post-types/post',       icon: FileText },
+  { label: 'עמודים',     href: '/admin/post-types/page',       icon: File },
+  { label: 'מוצרים',     href: '/admin/post-types/product',    icon: ShoppingBag },
+  { label: 'קטגוריות',   href: '/admin/product-categories',    icon: FolderOpen },
+  { label: 'תגיות',      href: '/admin/product-tags',          icon: Tag },
+  { label: 'הזמנות',     href: '/admin/orders',                icon: Package },
+  { label: 'קופונים',    href: '/admin/coupons',               icon: Ticket },
+  { label: 'משלוח',      href: '/admin/shipping',              icon: Truck },
+  { label: 'מדיה',       href: '/admin/media',                 icon: Image },
+  { label: 'משתמשים',    href: '/admin/users',                 icon: Users },
+  { label: 'מפתחות API', href: '/admin/api-keys',              icon: KeyRound },
+  { label: 'תוספים',     href: '/admin/plugins',               icon: Puzzle },
+  { label: 'הגדרות',     href: '/admin/settings',              icon: Settings },
+  { label: 'תפריטים',    href: '/admin/menus',                 icon: Menu },
+  { label: 'עדכונים',    href: '/admin/updates',               icon: RefreshCw },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/admin/login');
+  }
 
   return (
     <aside className="w-60 bg-card border-l border-border flex flex-col h-full flex-shrink-0">
@@ -35,6 +47,7 @@ export function Sidebar() {
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
+          const Icon = item.icon;
           const isActive = item.href === '/admin'
             ? pathname === '/admin'
             : pathname.startsWith(item.href);
@@ -49,7 +62,7 @@ export function Sidebar() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               )}
             >
-              <span className="text-base leading-none">{item.icon}</span>
+              <Icon className="h-4 w-4 shrink-0" />
               <span>{item.label}</span>
             </Link>
           );
@@ -58,7 +71,7 @@ export function Sidebar() {
 
       <div className="p-2 border-t border-border">
         <button
-          onClick={() => signOut({ callbackUrl: '/admin/login' })}
+          onClick={handleSignOut}
           className="w-full text-right text-sm text-muted-foreground hover:text-foreground px-3 py-2 rounded-md hover:bg-accent/50 transition-colors"
         >
           יציאה מהמערכת

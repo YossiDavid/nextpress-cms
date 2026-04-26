@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { getSession } from '@/lib/auth-session';
 import { prisma } from '@nextpress/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -26,7 +26,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function OrdersPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.email) redirect('/login');
 
   const orders = await prisma.order.findMany({

@@ -1,10 +1,10 @@
 'use client';
 
 import type { FieldDefinition } from '@prisma/client';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Input } from '@/components/admin/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/admin/ui/select';
+import { Textarea } from '@/components/admin/ui/textarea';
+import { Button } from '@/components/admin/ui/button';
 import { RichTextEditor } from './RichTextEditor';
 
 interface Props {

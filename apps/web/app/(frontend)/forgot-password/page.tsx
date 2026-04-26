@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { requestPasswordReset } from '@/app/actions/auth';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -12,7 +12,11 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await requestPasswordReset(email);
+    const supabase = createClient();
+    const baseUrl = process.env.NEXT_PUBLIC_URL ?? window.location.origin;
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${baseUrl}/reset-password`,
+    });
     setSent(true);
     setLoading(false);
   }
@@ -21,7 +25,6 @@ export default function ForgotPasswordPage() {
     return (
       <main className="min-h-screen flex items-center justify-center px-6">
         <div className="w-full max-w-sm text-center space-y-4">
-          <p className="text-4xl">📧</p>
           <h1 className="text-xl font-semibold">בדוק את תיבת הדואר</h1>
           <p className="text-sm text-muted-foreground">
             אם הכתובת קיימת במערכת, שלחנו קישור לאיפוס סיסמה.

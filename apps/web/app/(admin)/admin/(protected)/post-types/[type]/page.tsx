@@ -1,10 +1,10 @@
 import { prisma } from '@nextpress/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/admin/ui/button';
+import { Badge } from '@/components/admin/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
+import { Card, CardContent } from '@/components/admin/ui/card';
 
 interface Props { params: Promise<{ type: string }>; }
 const STATUS_LABEL: Record<string, string> = { DRAFT: 'טיוטה', PUBLISHED: 'פורסם', SCHEDULED: 'מתוזמן', TRASH: 'אשפה' };

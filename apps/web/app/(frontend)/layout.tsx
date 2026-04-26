@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { prisma } from '@nextpress/db';
 import { ThemeHeader, ThemeFooter } from '@nextpress/theme-default';
-import { SessionProviderWrapper } from '@/components/frontend/SessionProviderWrapper';
 import { initPlugins } from '@/lib/init-plugins';
 import '../globals.css';
 
@@ -27,11 +26,9 @@ export default async function FrontendLayout({ children }: { children: React.Rea
   return (
     <html lang="he" dir="rtl">
       <body className="min-h-screen bg-background text-foreground">
-        <SessionProviderWrapper>
-          <ThemeHeader />
-          {children}
-          <ThemeFooter />
-        </SessionProviderWrapper>
+        <ThemeHeader />
+        {children}
+        <ThemeFooter />
       </body>
     </html>
   );

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/admin/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
 
 interface TaxItem { id: string; name: string; slug: string }
 

@@ -1,10 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('Seeding database...');
 
   // Built-in Post Types
   const postType = await prisma.postType.upsert({
@@ -72,20 +71,21 @@ async function main() {
 
   console.log('✅ Post types created:', postType.slug, pageType.slug, productType.slug);
 
-  // Admin user — reads from env so create-nextpress credentials are used
+  // Admin user — the Supabase Auth user must be created first in the Supabase Dashboard.
+  // Set ADMIN_UUID to the UUID from Supabase Auth > Users, and ADMIN_EMAIL to match.
   const adminEmail = process.env['ADMIN_EMAIL'] ?? 'admin@nextpress.dev';
-  const adminPassword = process.env['ADMIN_PASSWORD'] ?? 'admin123';
-  const passwordHash = await bcrypt.hash(adminPassword, 10);
-  const admin = await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: { passwordHash },
-    create: {
-      email: adminEmail,
-      name: 'מנהל מערכת',
-      passwordHash,
-      role: 'ADMIN',
-    },
-  });
+  const adminUuid = process.env['ADMIN_UUID'];
+  if (!adminUuid) {
+    console.warn('⚠️  ADMIN_UUID not set — skipping admin user upsert. Create the user in Supabase Auth first, then set ADMIN_UUID.');
+  } else {
+    await prisma.user.upsert({
+      where: { email: adminEmail },
+      update: {},
+      create: { id: adminUuid, email: adminEmail, name: 'מנהל מערכת', role: 'ADMIN' },
+    });
+    console.log('✅ Admin user created:', adminEmail);
+  }
+  const admin = { email: adminEmail };
 
   console.log('✅ Admin user created:', admin.email);
 
@@ -130,7 +130,7 @@ async function main() {
   }
 
   console.log('✅ Site options seeded');
-  console.log('🎉 Seeding complete!');
+  console.log('Seeding complete.');
 }
 
 main()

@@ -16,7 +16,7 @@ export default function GlobalError({ error, reset }: Props) {
     <html lang="he" dir="rtl">
       <body className="min-h-screen flex items-center justify-center bg-background text-foreground px-6">
         <div className="text-center space-y-4 max-w-md">
-          <p className="text-6xl">💥</p>
+          <p className="text-4xl font-light text-muted-foreground">500</p>
           <h1 className="text-2xl font-bold">שגיאה קריטית</h1>
           <p className="text-muted-foreground text-sm">
             אירעה שגיאה חמורה. אנא רענן את הדף או צור קשר עם התמיכה.

@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { updateUserRole, deleteUser } from '@/app/actions/users';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/admin/ui/select';
+import { Button } from '@/components/admin/ui/button';
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'מנהל',

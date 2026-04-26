@@ -38,7 +38,7 @@ export function ArchivePage({ posts, postType, fieldValueMap }: Props) {
                     />
                   ) : (
                     <div className="w-full h-48 bg-muted flex items-center justify-center text-3xl text-muted-foreground">
-                      📄
+                      
                     </div>
                   )}
                   <div className="p-4">

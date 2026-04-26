@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { createApiKey, deleteApiKey } from '@/app/actions/api-keys';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/admin/ui/button';
+import { Input } from '@/components/admin/ui/input';
+import { Label } from '@/components/admin/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
 
 interface ApiKey {
   id: string;

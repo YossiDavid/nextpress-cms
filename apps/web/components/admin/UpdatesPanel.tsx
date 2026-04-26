@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { runUpdate } from '@/app/actions/updates';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/admin/ui/button';
+import { Badge } from '@/components/admin/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
 
 interface Props {
   current: string;

@@ -1,8 +1,8 @@
 import { prisma } from '@nextpress/db';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/admin/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
+import { Badge } from '@/components/admin/ui/badge';
+import { Button } from '@/components/admin/ui/button';
 import { createCoupon, toggleCoupon, deleteCoupon } from '@/app/actions/coupons';
 
 const TYPE_LABELS: Record<string, string> = { PERCENT: 'אחוז', FIXED: 'סכום קבוע', FREE_SHIPPING: 'משלוח חינם' };

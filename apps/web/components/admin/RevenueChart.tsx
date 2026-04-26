@@ -54,7 +54,7 @@ export function RevenueChart({ data }: Props) {
                 </text>
               )}
               {/* Tooltip via title */}
-              <title>{d.date}: ₪{d.revenue.toFixed(2)}</title>
+              <title suppressHydrationWarning>{d.date}: ₪{d.revenue.toFixed(2)}</title>
             </g>
           );
         })}

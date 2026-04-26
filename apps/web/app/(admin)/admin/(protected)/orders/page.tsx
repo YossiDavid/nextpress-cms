@@ -1,6 +1,6 @@
 import { prisma } from '@nextpress/db';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent } from '@/components/admin/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/admin/ui/table';
 import { OrderStatusSelect } from '@/components/admin/OrderStatusSelect';
 
 export default async function OrdersPage() {
