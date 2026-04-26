@@ -40,16 +40,70 @@ const response = await prompts(
       name: 'database',
       message: 'Database:',
       choices: [
-        { title: 'PostgreSQL via Docker Compose (recommended)', value: 'postgres-docker' },
-        { title: 'PostgreSQL — I have my own', value: 'postgres-existing' },
+        { title: 'Supabase — managed Postgres (recommended)', value: 'supabase' },
+        { title: 'Neon — serverless Postgres',                value: 'neon' },
+        { title: 'Docker Compose — local Postgres',           value: 'postgres-docker' },
+        { title: 'PostgreSQL — I have my own',                value: 'postgres-existing' },
       ],
       initial: 0,
     },
+    // Supabase project URL
     {
-      type: (_, values) => (values.database === 'postgres-existing' ? 'text' : null),
+      type: (_, v) => v.database === 'supabase' ? 'text' : null,
+      name: 'supabaseUrl',
+      message: 'Supabase project URL:',
+      hint: 'Dashboard → Settings → API → Project URL',
+      initial: 'https://your-project-ref.supabase.co',
+      validate: (v) => v.startsWith('https://') || 'Must start with https://',
+    },
+    // Supabase anon key
+    {
+      type: (_, v) => v.database === 'supabase' ? 'text' : null,
+      name: 'supabaseAnonKey',
+      message: 'Supabase anon key:',
+      hint: 'Dashboard → Settings → API → anon public',
+    },
+    // Supabase service role key
+    {
+      type: (_, v) => v.database === 'supabase' ? 'password' : null,
+      name: 'supabaseServiceKey',
+      message: 'Supabase service role key:',
+      hint: 'Dashboard → Settings → API → service_role (keep this secret)',
+    },
+    // Supabase — pooled URL (runtime)
+    {
+      type: (_, v) => v.database === 'supabase' ? 'text' : null,
+      name: 'databaseUrl',
+      message: 'Supabase connection string (Transaction mode, port 6543):',
+      hint: 'Dashboard → Settings → Database → Connection string → Transaction mode',
+      initial: 'postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres',
+      validate: (v) => v.startsWith('postgresql://') || v.startsWith('postgres://') || 'Must be a PostgreSQL connection string',
+    },
+    // Supabase — direct URL (migrations)
+    {
+      type: (_, v) => v.database === 'supabase' ? 'text' : null,
+      name: 'directUrl',
+      message: 'Supabase direct connection string (port 5432, for migrations):',
+      hint: 'Dashboard → Settings → Database → Connection string → Session mode',
+      initial: 'postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres',
+      validate: (v) => v.startsWith('postgresql://') || v.startsWith('postgres://') || 'Must be a PostgreSQL connection string',
+    },
+    // Neon
+    {
+      type: (_, v) => v.database === 'neon' ? 'text' : null,
+      name: 'databaseUrl',
+      message: 'Neon connection string:',
+      hint: 'Dashboard → your project → Connection Details → copy the connection string',
+      initial: 'postgresql://[user]:[password]@[endpoint].neon.tech/[dbname]?sslmode=require',
+      validate: (v) => v.startsWith('postgresql://') || v.startsWith('postgres://') || 'Must be a PostgreSQL connection string',
+    },
+    // Existing / custom Postgres
+    {
+      type: (_, v) => v.database === 'postgres-existing' ? 'text' : null,
       name: 'databaseUrl',
       message: 'Database URL:',
       initial: 'postgresql://user:password@localhost:5432/nextpress',
+      validate: (v) => v.startsWith('postgresql://') || v.startsWith('postgres://') || 'Must be a PostgreSQL connection string',
     },
     {
       type: 'text',
@@ -74,7 +128,7 @@ const response = await prompts(
 );
 
 const projectName = response.projectName ?? argDir ?? 'my-nextpress-site';
-const { siteTitle, database, adminEmail, adminPassword, databaseUrl } = response;
+const { siteTitle, database, adminEmail, adminPassword, databaseUrl, directUrl, supabaseUrl, supabaseAnonKey, supabaseServiceKey } = response;
 const isInPlace = projectName === '.';
 const projectDir = isInPlace ? process.cwd() : resolve(process.cwd(), projectName);
 
@@ -86,6 +140,22 @@ function ok() {
 }
 function warn(msg) {
   process.stdout.write(yellow(`⚠ ${msg}`));
+}
+
+// Print setup hints for managed DB providers before we start downloading
+if (database === 'supabase') {
+  console.log('');
+  console.log(`  ${bold('Supabase setup:')} https://supabase.com/dashboard/new`);
+  console.log(dim('  1. Create a new project'));
+  console.log(dim('  2. Settings → Database → Connection string → Transaction mode'));
+  console.log(dim('  3. Copy the connection string (port 6543)'));
+  console.log('');
+} else if (database === 'neon') {
+  console.log('');
+  console.log(`  ${bold('Neon setup:')} https://console.neon.tech`);
+  console.log(dim('  1. Create a new project'));
+  console.log(dim('  2. Connection Details → copy the connection string'));
+  console.log('');
 }
 
 console.log('');
@@ -135,16 +205,43 @@ const authSecret = Buffer.from(
   Array.from({ length: 32 }, () => Math.floor(Math.random() * 256)),
 ).toString('base64');
 
-const envContent = [
+// DIRECT_URL is only needed for Supabase (pooled vs direct connection).
+// For all other drivers, Prisma falls back to DATABASE_URL when DIRECT_URL is missing.
+const directUrlLine = directUrl ? `DIRECT_URL="${directUrl}"` : `DIRECT_URL="${dbUrl}"`;
+
+const revalidateSecret = Buffer.from(
+  Array.from({ length: 32 }, () => Math.floor(Math.random() * 256)),
+).toString('base64');
+
+const envLines = [
   `DATABASE_URL="${dbUrl}"`,
+  directUrlLine,
   `AUTH_SECRET="${authSecret}"`,
   `NEXT_PUBLIC_URL="http://localhost:3000"`,
+  `API_URL="http://localhost:3001"`,
+  `REVALIDATE_SECRET="${revalidateSecret}"`,
   `ADMIN_EMAIL="${adminEmail}"`,
   `ADMIN_PASSWORD="${adminPassword}"`,
   `SITE_TITLE="${siteTitle}"`,
-  `UPLOAD_DIR="./uploads"`,
-  `UPLOAD_URL="http://localhost:3000/uploads"`,
-].join('\n') + '\n';
+];
+
+if (database === 'supabase') {
+  envLines.push(
+    `SUPABASE_URL="${supabaseUrl}"`,
+    `SUPABASE_ANON_KEY="${supabaseAnonKey}"`,
+    `SUPABASE_SERVICE_ROLE_KEY="${supabaseServiceKey}"`,
+    `SUPABASE_STORAGE_BUCKET="media"`,
+    `STORAGE_DRIVER="supabase"`,
+  );
+} else {
+  envLines.push(
+    `STORAGE_DRIVER="local"`,
+    `UPLOAD_DIR="./uploads"`,
+    `UPLOAD_URL="http://localhost:3000/uploads"`,
+  );
+}
+
+const envContent = envLines.join('\n') + '\n';
 
 // Write to root (for Prisma CLI / db:migrate / db:seed)
 writeFileSync(join(projectDir, '.env.local'), envContent);
