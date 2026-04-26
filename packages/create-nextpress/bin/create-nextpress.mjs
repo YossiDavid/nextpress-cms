@@ -296,11 +296,17 @@ async function resolveFailedAndRetry() {
     );
   } catch { /* migrations dir not found, skip */ }
 
+  // Mark failed migrations as --applied (not --rolled-back).
+  // Reason: P3009 most commonly happens when the DB already has the schema
+  // (e.g. reusing a Supabase project). Marking as --applied tells Prisma
+  // "this schema is already there, skip it" so the next deploy can continue
+  // with any remaining migrations. Using --rolled-back would cause Prisma to
+  // retry the migration, which fails again with "already exists" → infinite loop.
   for (const name of migrationNames) {
     try {
       await execa(
         'pnpm',
-        ['--filter', '@nextpress/db', 'exec', 'dotenv', '-e', '../../.env.local', '--', 'prisma', 'migrate', 'resolve', '--rolled-back', name],
+        ['--filter', '@nextpress/db', 'exec', 'dotenv', '-e', '../../.env.local', '--', 'prisma', 'migrate', 'resolve', '--applied', name],
         { cwd: projectDir, stdio: 'ignore' }
       );
     } catch { /* migration wasn't in failed state — that's fine */ }
@@ -311,11 +317,14 @@ async function resolveFailedAndRetry() {
 try {
   await runMigrations();
   ok();
-} catch {
+} catch (e1) {
+  process.stdout.write(yellow(` ⚠ first attempt failed (${e1.shortMessage ?? e1.message}), trying P3009 recovery`));
   try {
     await resolveFailedAndRetry();
     ok();
-  } catch {
+  } catch (e2) {
+    console.log('');
+    console.log(red(`\n  Migration error: ${e2.stderr ?? e2.shortMessage ?? e2.message}`));
     warn('migration failed — run `pnpm db:deploy` manually');
   }
 }
@@ -361,7 +370,7 @@ step('Seeding database');
 try {
   await execa('pnpm', ['db:seed'], {
     cwd: projectDir,
-    stdio: 'ignore',
+    stdio: 'pipe',
     env: {
       ...process.env,
       ADMIN_EMAIL: adminEmail,
@@ -370,7 +379,9 @@ try {
     },
   });
   ok();
-} catch {
+} catch (e) {
+  console.log('');
+  console.log(red(`\n  Seed error: ${e.stderr ?? e.shortMessage ?? e.message}`));
   warn('seed failed — run `pnpm db:seed` manually');
 }
 
