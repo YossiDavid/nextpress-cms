@@ -85,9 +85,6 @@ async function main() {
     });
     console.log('✅ Admin user created:', adminEmail);
   }
-  const admin = { email: adminEmail };
-
-  console.log('✅ Admin user created:', admin.email);
 
   // Default menu
   const menu = await prisma.menu.upsert({

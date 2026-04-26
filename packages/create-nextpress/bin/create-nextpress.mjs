@@ -56,19 +56,19 @@ const response = await prompts(
       initial: 'https://your-project-ref.supabase.co',
       validate: (v) => v.startsWith('https://') || 'Must start with https://',
     },
-    // Supabase anon key
+    // Supabase publishable key
     {
       type: (_, v) => v.database === 'supabase' ? 'text' : null,
-      name: 'supabaseAnonKey',
-      message: 'Supabase anon key:',
-      hint: 'Dashboard → Settings → API → anon public',
+      name: 'supabasePublishableKey',
+      message: 'Supabase publishable key:',
+      hint: 'Dashboard → Settings → API → Publishable key',
     },
-    // Supabase service role key
+    // Supabase secret key
     {
       type: (_, v) => v.database === 'supabase' ? 'password' : null,
-      name: 'supabaseServiceKey',
-      message: 'Supabase service role key:',
-      hint: 'Dashboard → Settings → API → service_role (keep this secret)',
+      name: 'supabaseSecretKey',
+      message: 'Supabase secret key:',
+      hint: 'Dashboard → Settings → API → Secret key (keep this secret)',
     },
     // Supabase — pooled URL (runtime)
     {
@@ -128,7 +128,7 @@ const response = await prompts(
 );
 
 const projectName = response.projectName ?? argDir ?? 'my-nextpress-site';
-const { siteTitle, database, adminEmail, adminPassword, databaseUrl, directUrl, supabaseUrl, supabaseAnonKey, supabaseServiceKey } = response;
+const { siteTitle, database, adminEmail, adminPassword, databaseUrl, directUrl, supabaseUrl, supabasePublishableKey, supabaseSecretKey } = response;
 const isInPlace = projectName === '.';
 const projectDir = isInPlace ? process.cwd() : resolve(process.cwd(), projectName);
 
@@ -201,7 +201,7 @@ const dbUrl =
     ? `postgresql://nextpress:nextpress@localhost:5432/nextpress`
     : (databaseUrl ?? 'postgresql://user:password@localhost:5432/nextpress');
 
-const authSecret = Buffer.from(
+const revalidateSecret = Buffer.from(
   Array.from({ length: 32 }, () => Math.floor(Math.random() * 256)),
 ).toString('base64');
 
@@ -209,27 +209,21 @@ const authSecret = Buffer.from(
 // For all other drivers, Prisma falls back to DATABASE_URL when DIRECT_URL is missing.
 const directUrlLine = directUrl ? `DIRECT_URL="${directUrl}"` : `DIRECT_URL="${dbUrl}"`;
 
-const revalidateSecret = Buffer.from(
-  Array.from({ length: 32 }, () => Math.floor(Math.random() * 256)),
-).toString('base64');
-
 const envLines = [
   `DATABASE_URL="${dbUrl}"`,
   directUrlLine,
-  `AUTH_SECRET="${authSecret}"`,
   `NEXT_PUBLIC_URL="http://localhost:3000"`,
   `API_URL="http://localhost:3001"`,
   `REVALIDATE_SECRET="${revalidateSecret}"`,
   `ADMIN_EMAIL="${adminEmail}"`,
-  `ADMIN_PASSWORD="${adminPassword}"`,
   `SITE_TITLE="${siteTitle}"`,
 ];
 
 if (database === 'supabase') {
   envLines.push(
-    `SUPABASE_URL="${supabaseUrl}"`,
-    `SUPABASE_ANON_KEY="${supabaseAnonKey}"`,
-    `SUPABASE_SERVICE_ROLE_KEY="${supabaseServiceKey}"`,
+    `NEXT_PUBLIC_SUPABASE_URL="${supabaseUrl}"`,
+    `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY="${supabasePublishableKey}"`,
+    `SUPABASE_SECRET_KEY="${supabaseSecretKey}"`,
     `SUPABASE_STORAGE_BUCKET="media"`,
     `STORAGE_DRIVER="supabase"`,
   );
@@ -243,7 +237,7 @@ if (database === 'supabase') {
 
 const envContent = envLines.join('\n') + '\n';
 
-// Write to root (for Prisma CLI / db:migrate / db:seed)
+// Write to root (for Prisma CLI / db:deploy / db:seed)
 writeFileSync(join(projectDir, '.env.local'), envContent);
 // Write to apps/web (Next.js reads env from its own directory)
 mkdirSync(join(projectDir, 'apps', 'web'), { recursive: true });
@@ -285,16 +279,84 @@ if (database === 'postgres-docker') {
   }
 }
 
-// 6. Run migrations
+// 6. Run migrations — with automatic P3009 recovery
+// P3009 means a previous migration attempt left a "failed" record in _prisma_migrations.
+// We resolve each known migration as rolled-back, then retry deploy.
 step('Running database migrations');
-try {
+async function runMigrations() {
   await execa('pnpm', ['db:deploy'], { cwd: projectDir, stdio: 'ignore' });
-  ok();
-} catch {
-  warn('migration failed — run \`pnpm db:deploy\` manually');
 }
 
-// 7. Seed database
+async function resolveFailedAndRetry() {
+  const migrationsDir = join(projectDir, 'packages', 'db', 'prisma', 'migrations');
+  let migrationNames = [];
+  try {
+    migrationNames = readdirSync(migrationsDir).filter(
+      (f) => !f.startsWith('.') && f !== 'migration_lock.toml'
+    );
+  } catch { /* migrations dir not found, skip */ }
+
+  for (const name of migrationNames) {
+    try {
+      await execa(
+        'pnpm',
+        ['--filter', '@nextpress/db', 'exec', 'dotenv', '-e', '../../.env.local', '--', 'prisma', 'migrate', 'resolve', '--rolled-back', name],
+        { cwd: projectDir, stdio: 'ignore' }
+      );
+    } catch { /* migration wasn't in failed state — that's fine */ }
+  }
+  await execa('pnpm', ['db:deploy'], { cwd: projectDir, stdio: 'ignore' });
+}
+
+try {
+  await runMigrations();
+  ok();
+} catch {
+  try {
+    await resolveFailedAndRetry();
+    ok();
+  } catch {
+    warn('migration failed — run `pnpm db:deploy` manually');
+  }
+}
+
+// 7. Create admin user in Supabase Auth (Supabase only) + seed database
+let adminUuid = undefined;
+
+if (database === 'supabase' && supabaseUrl && supabaseSecretKey) {
+  step('Creating admin user in Supabase Auth');
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseSecretKey}`,
+        'apikey': supabaseSecretKey,
+      },
+      body: JSON.stringify({
+        email: adminEmail,
+        password: adminPassword,
+        email_confirm: true,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      adminUuid = data.id;
+      ok();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      // User may already exist — try to look them up
+      if (err.msg?.includes('already been registered') || err.code === 'email_exists') {
+        warn('user already exists in Supabase Auth — set ADMIN_UUID manually if seed fails');
+      } else {
+        warn(`Supabase user creation failed (${err.msg ?? res.status}) — set ADMIN_UUID manually`);
+      }
+    }
+  } catch (e) {
+    warn(`Supabase user creation failed (${e.message}) — set ADMIN_UUID manually`);
+  }
+}
+
 step('Seeding database');
 try {
   await execa('pnpm', ['db:seed'], {
@@ -303,8 +365,8 @@ try {
     env: {
       ...process.env,
       ADMIN_EMAIL: adminEmail,
-      ADMIN_PASSWORD: adminPassword,
       SITE_TITLE: siteTitle,
+      ...(adminUuid ? { ADMIN_UUID: adminUuid } : {}),
     },
   });
   ok();
@@ -322,6 +384,14 @@ if (!isInPlace) {
   console.log(`  ${cyan('2.')} pnpm dev:web`);
 } else {
   console.log(`  ${cyan('1.')} pnpm dev:web`);
+}
+
+if (database !== 'supabase' || !adminUuid) {
+  console.log('');
+  console.log(`  ${yellow('⚠')}  Admin user not seeded. To finish setup:`);
+  console.log(dim('     1. Create a user in Supabase Auth → Authentication → Users'));
+  console.log(dim('     2. Copy the UUID'));
+  console.log(dim(`     3. ADMIN_UUID=<uuid> pnpm db:seed`));
 }
 
 console.log('');
