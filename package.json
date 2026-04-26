@@ -10,7 +10,7 @@
 		"db:migrate": "turbo db:migrate",
 		"db:deploy": "pnpm --filter @nextpress/db db:deploy",
 		"db:studio": "cd packages/db && pnpm prisma studio",
-		"db:seed": "cd packages/db && pnpm tsx src/seed.ts",
+		"db:seed": "pnpm --filter @nextpress/db db:seed",
 		"publish:cli": "pnpm --filter create-nextpress-cms publish --access public --no-git-checks"
 	},
 	"devDependencies": {

@@ -373,6 +373,8 @@ try {
     stdio: 'pipe',
     env: {
       ...process.env,
+      DATABASE_URL: dbUrl,
+      DIRECT_URL: directUrl ?? dbUrl,
       ADMIN_EMAIL: adminEmail,
       SITE_TITLE: siteTitle,
       ...(adminUuid ? { ADMIN_UUID: adminUuid } : {}),

@@ -22,6 +22,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
     if (authError) {
+      console.error('[login] Supabase auth error:', authError.message, authError);
       setError('אימייל או סיסמה שגויים');
       setLoading(false);
     } else {
